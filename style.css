@@ -1,22 +1,35 @@
 .ball {
   display: block;
-  width: 16px;
-  height: 16px;
-  margin: auto;
-  background-color: rgba(0,0,0,0.8);
+  width: 85%;
+  height: 85%;
+  background-color: black;
   border-radius: 50%;
 }
 
+.player-ball {
+  background: radial-gradient(circle at 30% 35%, #fff, #888, #000);
+}
+.red-ball {
+  background: radial-gradient(circle at 30% 35%, #fee, #d00, #000);
+}
+.black-ball {
+  background: radial-gradient(circle at 30% 35%, #fff, #222,  #000);
+}
 .game-board {
   display: grid;
-  grid-template-columns: repeat(20, 20px);
-  grid-template-rows: repeat(20, 20px);
-  width: 400px;
-  height: 400px;
-  background-color: #333;
+  border: 5px solid black;
+  grid-template-columns: repeat(20, 1fr);
+  grid-template-rows: repeat(20, 1fr);
+  grid-column-gap: 1px;
+  grid-row-gap: 1px;
+  width: 600px;
+  height: 600px;
+  background-color: #888;
 }
 
 .board-cell {
-  background-color: #999;
-  border: 1px solid black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #111;
 }
