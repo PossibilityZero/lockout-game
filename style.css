@@ -1,0 +1,22 @@
+.ball {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  background-color: rgba(0,0,0,0.8);
+  border-radius: 50%;
+}
+
+.game-board {
+  display: grid;
+  grid-template-columns: repeat(20, 20px);
+  grid-template-rows: repeat(20, 20px);
+  width: 400px;
+  height: 400px;
+  background-color: #333;
+}
+
+.board-cell {
+  background-color: #999;
+  border: 1px solid black;
+}
