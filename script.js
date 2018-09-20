@@ -1,3 +1,37 @@
+// Create Board
+const board = document.querySelector('.game-board');
+
+function generateCells(columns, rows) {
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < columns; j++) {
+            let newCell = document.createElement('div');
+            newCell.classList.add('board-cell');
+            newCell.dataset.xCoord = j;
+            newCell.dataset.yCoord = i;
+            newCell.setAttribute('id', `(${j},${i})`)
+            if (j <=1 || j >= columns - 2 || i <= 1 || i >= rows - 2) {
+                newCell.classList.add('claimed-cell');
+            } else {
+                newCell.classList.add('unclaimed-cell');
+            }
+            board.appendChild(newCell);
+        }
+    }
+}
+
+function setBoardStyle(columns, rows, cellSize) {
+    board.style.gridTemplateColumns = `repeat(${columns}, 1fr)`
+    board.style.gridTemplateRows = `repeat(${rows}, 1fr)`
+    board.style.width = cellSize * columns + 'px';
+    board.style.height = cellSize * rows + 'px';
+}
+
+function drawBoard(columns, rows, cellSize=20) {
+    generateCells(columns, rows);
+    setBoardStyle(columns, rows, cellSize);
+}
+
+// Game Functions
 const directions = {
     LEFT: 37,
     UP: 38,
@@ -101,10 +135,12 @@ function updateBoard() {
     setTimeout(updateBoard, 60);
 }
 
-let boardDimensions = {x: 29, y: 19};
-const playerBall = new Player ({x:14,y:0}, boardDimensions);
-const enemy1 = new RedEnemy ({x:1,y:9}, boardDimensions);
-const enemy2 = new BlackEnemy ({x:15,y:10}, boardDimensions);
+let boardDimensions = {x: 40, y: 25};
+drawBoard(boardDimensions.x, boardDimensions.y);
+let boardBoundaries = {x: boardDimensions.x-1, y: boardDimensions.y-1};
+const playerBall = new Player ({x:14,y:0}, boardBoundaries);
+const enemy1 = new RedEnemy ({x:1,y:9}, boardBoundaries);
+const enemy2 = new BlackEnemy ({x:15,y:10}, boardBoundaries);
 game.addBall(playerBall);
 game.addBall(enemy1);
 game.addBall(enemy2);

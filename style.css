@@ -39,12 +39,23 @@ h1 {
   border: 5px solid black;
   grid-column-gap: 1px;
   grid-row-gap: 1px;
-  background-color: #888;
+  background-color: #ddd;
 }
 
 .board-cell {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.claimed-cell {
   background-color: #111;
+}
+
+.unclaimed-cell {
+  background-color: #ddd;
+}
+
+.live-cell {
+  background-color: #00f;
 }
