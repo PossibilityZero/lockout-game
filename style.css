@@ -1,3 +1,21 @@
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+h1, h2 {
+  text-align: center;
+  margin: auto;
+}
+
+h1 {
+  font-size: 70px;
+}
+
+.game-container {
+  display: block;
+  margin: auto;
+}
+
 .ball {
   display: block;
   width: 85%;
@@ -17,13 +35,10 @@
 }
 .game-board {
   display: grid;
+  margin: auto;
   border: 5px solid black;
-  grid-template-columns: repeat(20, 1fr);
-  grid-template-rows: repeat(20, 1fr);
   grid-column-gap: 1px;
   grid-row-gap: 1px;
-  width: 600px;
-  height: 600px;
   background-color: #888;
 }
 
