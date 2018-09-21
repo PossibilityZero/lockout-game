@@ -1,9 +1,13 @@
-const enemy1 = new RedEnemy ({x:10,y:13}, boardBoundaries);
-const enemy2 = new RedEnemy ({x:30,y:13}, boardBoundaries);
-const enemy3 = new BlackEnemy ({x:36,y:23}, boardBoundaries);
+let boardDimensions = {x: 10, y: 10};
+drawBoard(boardDimensions.x, boardDimensions.y);
+let boardBoundaries = {x: boardDimensions.x-1, y: boardDimensions.y-1};
+
+const playerBall = new Player ({x:5,y:0}, boardBoundaries);
+game.addBall(playerBall);
+document.addEventListener('keypress', handleInput);
+
+const enemy1 = new RedEnemy ({x:5,y:5}, boardBoundaries);
 game.addBall(enemy1);
-game.addBall(enemy2);
-game.addBall(enemy3);
 
 const cells = document.querySelectorAll('.board-cell');
 function toggleClaimed(e){
@@ -13,3 +17,5 @@ function toggleClaimed(e){
 for (let i = 0; i < cells.length; i++) {
     cells[i].addEventListener('click', toggleClaimed);
 }
+
+updateBoard(1000);

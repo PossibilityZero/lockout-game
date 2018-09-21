@@ -76,17 +76,39 @@ function Ball(coords, boundaries, ballType) {
         };
         return {xTarget, yTarget};
     };
+    this.getAdjacentCellCoords = function() {
+        const xAdjacent = {
+            x: this.coords.x + this.velocity.x,
+            y: this.coords.y
+        };
+        const yAdjacent = {
+            x: this.coords.x,
+            y: this.coords.y + this.velocity.y
+        };
+        return {xAdjacent, yAdjacent};
+    }
     this.setBounceVelocity = function(relevantCells) {
         const canMaintainX = this.canEnterCell(relevantCells.bounceTargetX);
         const canMaintainY = this.canEnterCell(relevantCells.bounceTargetY);
-        if (canMaintainX == canMaintainY) {
+        const preferBounceX = !this.canEnterCell(relevantCells.adjacentX);
+        const preferBounceY = !this.canEnterCell(relevantCells.adjacentY);
+        if (!canMaintainX && ! canMaintainY) {
             this.velocity.x *= -1;
             this.velocity.y *= -1;
+        } else if (canMaintainX && canMaintainY) {
+            if (preferBounceX > preferBounceY) {
+                this.velocity.x *= -1;
+            } else if (preferBounceX < preferBounceY) {
+                this.velocity.y *= -1;
+            } else {
+                this.velocity.x *= -1;
+                this.velocity.y *= -1;
+            }
         } else if (canMaintainX) {
             this.velocity.y *= -1;
         } else if (canMaintainY) {
             this.velocity.x *= -1;
-        }
+        } 
         return this.getTargetCoords();
     };
     this.setCoords = function(newCoords) {
@@ -167,9 +189,12 @@ const game = {
                 ball.updateCoords();
             } else {
                 const bounceTargetCoords = ball.getBounceTargetCoords();
+                const adjacentCellCoords = ball.getAdjacentCellCoords();
                 const relevantCells = {
                     bounceTargetX: board.querySelector('#'+toCoordsString(bounceTargetCoords.xTarget)),
-                    bounceTargetY: board.querySelector('#'+toCoordsString(bounceTargetCoords.yTarget))
+                    bounceTargetY: board.querySelector('#'+toCoordsString(bounceTargetCoords.yTarget)),
+                    adjacentX: board.querySelector('#'+toCoordsString(adjacentCellCoords.xAdjacent)),
+                    adjacentY: board.querySelector('#'+toCoordsString(adjacentCellCoords.yAdjacent))
                 }
                 ball.setBounceVelocity(relevantCells);
                 ball.updateCoords();
@@ -199,17 +224,8 @@ function handleInput(e) {
     playerBall.input(e.keyCode);
 }
 
-function updateBoard() {
+function updateBoard(tickLength) {
     game.updateEntities();
     game.renderBoard();
-    setTimeout(updateBoard, 60);
+    setTimeout(() => updateBoard(tickLength), tickLength);
 }
-
-let boardDimensions = {x: 40, y: 25};
-drawBoard(boardDimensions.x, boardDimensions.y);
-let boardBoundaries = {x: boardDimensions.x-1, y: boardDimensions.y-1};
-
-const playerBall = new Player ({x:19,y:0}, boardBoundaries);
-game.addBall(playerBall);
-document.addEventListener('keypress', handleInput);
-updateBoard();
