@@ -8,7 +8,7 @@ function generateCells(columns, rows) {
             newCell.classList.add('board-cell');
             newCell.dataset.xCoord = j;
             newCell.dataset.yCoord = i;
-            newCell.setAttribute('id', `(${j},${i})`)
+            newCell.setAttribute('id', `x${j}y${i}`)
             if (j <=1 || j >= columns - 2 || i <= 1 || i >= rows - 2) {
                 newCell.classList.add('claimed-cell');
             } else {
@@ -32,6 +32,10 @@ function drawBoard(columns, rows, cellSize=20) {
 }
 
 // Game Functions
+function toCoordsString(coords) {
+    return `x${coords.x}y${coords.y}`
+}
+
 const directions = {
     LEFT: 37,
     UP: 38,
@@ -41,35 +45,55 @@ const directions = {
 
 function Ball(coords, boundaries, ballType) {
     this.coords = coords;
-    this.getCoords = function() {
-        return `(${this.coords.x},${this.coords.y})`
-    };
     this.boundaries = boundaries;
     this.ballType = ballType;
     this.velocity = {
-        x: -1,
-        y: 1
+        x: 0,
+        y: 0
     };
     this.moving = directions.NONE;
-    this.updateCoords = function() {
+    this.getNextCoords = function() {
         let nextX = this.coords.x + this.velocity.x;
         let nextY = this.coords.y + this.velocity.y;
+        // if out of bounds, default is to bounce back
         if (nextX < 0 || nextX > this.boundaries.x) {
-            this.velocity.x *= -1;
-            nextX = this.coords.x + this.velocity.x;
+            nextX = this.coords.x - this.velocity.x;
         }
         if (nextY < 0 || nextY > this.boundaries.y) {
-            this.velocity.y *= -1;
-            nextY = this.coords.y + this.velocity.y;
+            nextY = this.coords.y - this.velocity.y;
         }
-        this.coords.x = nextX;
-        this.coords.y = nextY;
-    }
+        return {x: nextX, y: nextY}
+    };
+    this.setCoords = function(newCoords) {
+        this.coords.x = newCoords.x;
+        this.coords.y = newCoords.y;
+    };
+    this.updateCoords = function(forcedNextCoords) {
+        let nextCoords = forcedNextCoords || this.getNextCoords();
+        this.velocity.x = nextCoords.x - this.coords.x;
+        this.velocity.y = nextCoords.y - this.coords.y;
+        this.setCoords(nextCoords);
+    };
 }
 function Player(coords, boundaries) {
     Ball.call(this, coords, boundaries, 'player-ball');
-    this.velocity.x = 0;
-    this.velocity.y = 0;
+    this.allowedCells = ['board-cell', 'claimed-cell', 'unclaimed-cell', 'live-cell'];
+    this.velocity = {
+        x: 0,
+        y: 0,
+    };
+    this.getNextCoords = function() {
+        let nextX = this.coords.x + this.velocity.x;
+        let nextY = this.coords.y + this.velocity.y;
+        // if out of bounds, default is to stop
+        if (nextX < 0 || nextX > this.boundaries.x) {
+            nextX = this.coords.x;
+        }
+        if (nextY < 0 || nextY > this.boundaries.y) {
+            nextY = this.coords.y;
+        }
+        return {x: nextX, y: nextY}
+    };
     this.input = function(keyCode) {
         switch (keyCode) {
             case directions.LEFT:
@@ -93,9 +117,19 @@ function Player(coords, boundaries) {
 }
 function BlackEnemy(coords, boundaries) {
     Ball.call(this, coords, boundaries, 'black-ball');
+    this.allowedCells = ['claimed-cell'];
+    this.velocity = {
+        x: 1,
+        y: 1,
+    };
 }
 function RedEnemy(coords, boundaries) {
     Ball.call(this, coords, boundaries, 'red-ball');
+    this.allowedCells = ['unclaimed-cell', 'live-cell'];
+    this.velocity = {
+        x: Math.random() < 0.5 ? 1 : -1,
+        y: Math.random() < 0.5 ? 1 : -1
+    };
 }
 
 const game = {
@@ -106,21 +140,30 @@ const game = {
     },
     updateEntities: function() {
         for (i in this.entities) {
-            this.entities[i].updateCoords();
+            const ball = this.entities[i];
+            const nextCell = board.querySelector('#'+toCoordsString(ball.getNextCoords()));
+            if (ball.allowedCells.some(cellType => nextCell.classList.contains(cellType))) {
+                ball.updateCoords();
+            } else {
+                //TODO calculate the next position if bounce is required
+            }
         }
     },
-    render: function() {
-        let currentEntities = this.board.querySelectorAll('.ball');
+    renderBoard: function() {
+        const currentEntities = this.board.querySelectorAll('.ball');
         for (i = 0; i < currentEntities.length; i++) {
             currentEntities[i].parentNode.removeChild(currentEntities[i]);
         }
         for (i in this.entities) {
-            let coords = this.entities[i].getCoords()
-            let cell = document.getElementById(coords);
-            let ball = document.createElement('div');
-            ball.classList.add('ball');
-            ball.classList.add(this.entities[i].ballType);
-            cell.appendChild(ball);
+            const coords = toCoordsString(this.entities[i].coords);
+            const cell = document.getElementById(coords);
+            if (!cell.firstChild) {
+                // only display one ball per cell
+                const ball = document.createElement('div');
+                ball.classList.add('ball');
+                ball.classList.add(this.entities[i].ballType);
+                cell.appendChild(ball);
+            }
         }
     }
 }
@@ -131,19 +174,22 @@ function handleInput(e) {
 
 function updateBoard() {
     game.updateEntities();
-    game.render();
+    game.renderBoard();
     setTimeout(updateBoard, 60);
 }
 
 let boardDimensions = {x: 40, y: 25};
 drawBoard(boardDimensions.x, boardDimensions.y);
 let boardBoundaries = {x: boardDimensions.x-1, y: boardDimensions.y-1};
-const playerBall = new Player ({x:14,y:0}, boardBoundaries);
-const enemy1 = new RedEnemy ({x:1,y:9}, boardBoundaries);
-const enemy2 = new BlackEnemy ({x:15,y:10}, boardBoundaries);
+
+const playerBall = new Player ({x:19,y:0}, boardBoundaries);
+const enemy1 = new RedEnemy ({x:10,y:13}, boardBoundaries);
+const enemy2 = new RedEnemy ({x:30,y:13}, boardBoundaries);
+const enemy3 = new BlackEnemy ({x:19,y:24}, boardBoundaries);
 game.addBall(playerBall);
 game.addBall(enemy1);
 game.addBall(enemy2);
+game.addBall(enemy3);
 document.addEventListener('keypress', handleInput);
 
 updateBoard();
