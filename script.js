@@ -2,12 +2,15 @@
 const board = document.querySelector('.game-board');
 
 function generateCells(columns, rows) {
-    for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < columns; j++) {
+    // generate a perimeter of dummy cells, to simulate an impassible boundary
+    for (let i = -1; i <= rows; i++) {
+        for (let j = -1; j <= columns; j++) {
             let newCell = document.createElement('div');
             newCell.classList.add('board-cell');
             newCell.setAttribute('id', `x${j}y${i}`)
-            if (j <=1 || j >= columns - 2 || i <= 1 || i >= rows - 2) {
+            if (j < 0 || j >= columns || i < 0 || i >= rows) {
+                newCell.classList.add('dummy-cell');
+            } else if (j <=1 || j >= columns - 2 || i <= 1 || i >= rows - 2) {
                 newCell.classList.add('claimed-cell');
             } else {
                 newCell.classList.add('unclaimed-cell');

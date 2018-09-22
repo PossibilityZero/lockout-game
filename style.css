@@ -48,6 +48,10 @@ h1 {
   justify-content: center;
 }
 
+.board-cell.dummy-cell {
+  display: none;
+}
+
 .claimed-cell {
   background-color: #111;
 }
