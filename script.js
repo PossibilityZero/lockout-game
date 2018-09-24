@@ -58,10 +58,9 @@ function Board(columns, rows) {
     this.drawBoard(columns, rows);
 }
 
-function Ball(coords, boundaries, ballType) {
+function Ball(coords, ballType) {
     this.coords = coords;
     this.originalCoords = {x: coords.x, y: coords.y};
-    this.boundaries = boundaries;
     this.allowedCells = ['board-cell'];
     this.ballType = ballType;
     this.velocity = {
@@ -80,13 +79,6 @@ function Ball(coords, boundaries, ballType) {
     this.getTargetCoords = function() {
         let nextX = this.coords.x + this.velocity.x;
         let nextY = this.coords.y + this.velocity.y;
-        // if out of bounds, default is to bounce back
-        if (nextX < 0 || nextX > this.boundaries.x) {
-            nextX = this.coords.x - this.velocity.x;
-        }
-        if (nextY < 0 || nextY > this.boundaries.y) {
-            nextY = this.coords.y - this.velocity.y;
-        }
         return {x: nextX, y: nextY}
     };
     this.getBounceTargetCoords = function() {
@@ -133,7 +125,6 @@ function Ball(coords, boundaries, ballType) {
         } else if (canMaintainY) {
             this.velocity.x *= -1;
         } 
-        return this.getTargetCoords();
     };
     this.setCoords = function(newCoords) {
         this.coords.x = newCoords.x;
@@ -146,24 +137,17 @@ function Ball(coords, boundaries, ballType) {
         this.setCoords(nextCoords);
     };
 }
-function Player(coords, boundaries) {
-    Ball.call(this, coords, boundaries, 'player-ball');
+function Player(coords) {
+    Ball.call(this, coords, 'player-ball');
     this.allowedCells = ['claimed-cell', 'unclaimed-cell', 'live-cell'];
     this.directions = {
         LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40,
         W: 87, A: 65, S: 83, D: 68
     };
-    this.getTargetCoords = function() {
-        let nextX = this.coords.x + this.velocity.x;
-        let nextY = this.coords.y + this.velocity.y;
-        // if out of bounds, default is to stop
-        if (nextX < 0 || nextX > this.boundaries.x) {
-            nextX = this.coords.x;
-        }
-        if (nextY < 0 || nextY > this.boundaries.y) {
-            nextY = this.coords.y;
-        }
-        return {x: nextX, y: nextY}
+    this.setBounceVelocity = function() {
+        // Player ball never bounces
+        this.velocity.x = 0;
+        this.velocity.y = 0;
     };
     this.input = function(keyCode) {
         switch (keyCode) {
@@ -190,8 +174,8 @@ function Player(coords, boundaries) {
     };
     document.addEventListener('keydown', (e) => this.handleInput(e));
 }
-function BlackEnemy(coords, boundaries) {
-    Ball.call(this, coords, boundaries, 'black-ball');
+function BlackEnemy(coords) {
+    Ball.call(this, coords, 'black-ball');
     this.allowedCells = ['claimed-cell'];
     this.resetVelocity = () => this.velocity = {x:1, y:1};
     this.velocity = {
@@ -199,8 +183,8 @@ function BlackEnemy(coords, boundaries) {
         y: 1,
     };
 }
-function RedEnemy(coords, boundaries) {
-    Ball.call(this, coords, boundaries, 'red-ball');
+function RedEnemy(coords) {
+    Ball.call(this, coords, 'red-ball');
     this.allowedCells = ['unclaimed-cell', 'live-cell'];
     this.velocity = {
         x: Math.random() < 0.5 ? 1 : -1,
