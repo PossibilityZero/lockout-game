@@ -46,6 +46,7 @@ const directions = {
 
 function Ball(coords, boundaries, ballType) {
     this.coords = coords;
+    this.originalCoords = {x: coords.x, y: coords.y};
     this.boundaries = boundaries;
     this.allowedCells = ['board-cell'];
     this.ballType = ballType;
@@ -53,6 +54,12 @@ function Ball(coords, boundaries, ballType) {
         x: 0,
         y: 0
     };
+    this.reset = function() {
+        this.coords.x = this.originalCoords.x;
+        this.coords.y = this.originalCoords.y;
+        this.resetVelocity();
+    };
+    this.resetVelocity = () => this.velocity = {x:0, y:0};
     this.canEnterCell = function(cell) {
         return this.allowedCells.some(cellType => cell.classList.contains(cellType))
     };
@@ -164,6 +171,7 @@ function Player(coords, boundaries) {
 function BlackEnemy(coords, boundaries) {
     Ball.call(this, coords, boundaries, 'black-ball');
     this.allowedCells = ['claimed-cell'];
+    this.resetVelocity = () => this.velocity = {x:1, y:1};
     this.velocity = {
         x: 1,
         y: 1,
@@ -176,12 +184,19 @@ function RedEnemy(coords, boundaries) {
         x: Math.random() < 0.5 ? 1 : -1,
         y: Math.random() < 0.5 ? 1 : -1
     };
+    this.resetVelocity = () => this.velocity = {
+        x: Math.random() < 0.5 ? 1 : -1,
+        y: Math.random() < 0.5 ? 1 : -1
+    };
 }
 
 const game = {
     board: document.querySelector('.game-board'),
     entities: [],
     addBall: function(ball) {
+        if (ball.ballType == 'player-ball') {
+            this.playerBall = ball;
+        }
         this.entities.push(ball);
     },
     updateEntities: function() {
@@ -204,6 +219,53 @@ const game = {
             }
         }
     },
+    claimStartVelocity: {},
+    startClaim: function() {
+        this.isClaiming = true;
+        this.claimStartVelocity = {};
+        this.claimStartVelocity.x = this.playerBall.velocity.x;
+        this.claimStartVelocity.y = this.playerBall.velocity.y;
+    },
+    paint: function() {
+    },
+    endClaim: function() {
+        this.isClaiming = false;
+        const boardCells = this.board.querySelectorAll('.board-cell');
+        // call paint function if returning to claimed cells in different direction
+        if (this.claimStartVelocity.x != this.playerBall.velocity.x ||
+            this.claimStartVelocity.y != this.playerBall.velocity.y) {
+            this.paint();
+        }
+        for (let i = 0; i < boardCells.length; i++) {
+            boardCells[i].classList.replace('live-cell', 'claimed-cell');
+        }
+    },
+    breakClaim: function() {
+        this.isClaiming = false;
+        this.playerBall.reset();
+        const boardCells = this.board.querySelectorAll('.board-cell');
+        for (let i = 0; i < boardCells.length; i++) {
+            boardCells[i].classList.replace('live-cell', 'unclaimed-cell');
+        }
+    },
+    updateBoard: function() {
+        const redEnemies = this.entities.filter((ball) => ball.ballType == 'red-ball');
+        for (let i = 0; i < redEnemies.length; i++) {
+            let enemyCoords = toCoordsString(redEnemies[i].coords);
+            let redEnemyCell = document.getElementById(enemyCoords);
+            if (redEnemyCell.classList.contains('live-cell')) {
+                this.breakClaim();
+            }
+        }
+        const coords = toCoordsString(this.playerBall.coords);
+        const playerCell = document.getElementById(coords);
+        playerCell.classList.replace('unclaimed-cell', 'live-cell');
+        if (playerCell.classList.contains('live-cell') && !this.isClaiming) {
+            this.startClaim();
+        } else if (playerCell.classList.contains('claimed-cell') && this.isClaiming) {
+            this.endClaim();
+        }
+    },
     renderBoard: function() {
         const currentEntities = this.board.querySelectorAll('.ball');
         for (i = 0; i < currentEntities.length; i++) {
@@ -220,6 +282,11 @@ const game = {
                 cell.appendChild(ball);
             }
         }
+    },
+    update: function() {
+        this.updateEntities();
+        this.updateBoard();
+        this.renderBoard();
     }
 }
 
@@ -228,7 +295,6 @@ function handleInput(e) {
 }
 
 function updateBoard(tickLength) {
-    game.updateEntities();
-    game.renderBoard();
+    game.update()
     setTimeout(() => updateBoard(tickLength), tickLength);
 }
