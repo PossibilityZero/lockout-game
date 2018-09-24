@@ -1,14 +1,8 @@
-let boardDimensions = {x: 10, y: 10};
-drawBoard(boardDimensions.x, boardDimensions.y);
-let boardBoundaries = {x: boardDimensions.x-1, y: boardDimensions.y-1};
+const boardDimensions = {x: 40, y: 25};
+const game = new Game();
+game.startNewLevel();
 
-const playerBall = new Player ({x:5,y:0}, boardBoundaries);
-game.addBall(playerBall);
-document.addEventListener('keypress', handleInput);
-
-const enemy1 = new RedEnemy ({x:5,y:5}, boardBoundaries);
-game.addBall(enemy1);
-
+//game.setBoardDimensions(boardDimensions.x, boardDimensions.y);
 const cells = document.querySelectorAll('.board-cell');
 function toggleClaimed(e){
     e.target.classList.toggle('unclaimed-cell');
@@ -17,5 +11,3 @@ function toggleClaimed(e){
 for (let i = 0; i < cells.length; i++) {
     cells[i].addEventListener('click', toggleClaimed);
 }
-
-updateBoard(1000);

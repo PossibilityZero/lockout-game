@@ -314,6 +314,42 @@ function Level(board) {
     };
 }
 
+function Game(){
+    this.boardContainer = document.querySelector('.game-board');
+    this.dimensions = {x: 40, y: 25};
+    this.redBallCount = 2;
+    this.tickLength = 80;
+    this.reset = function() {
+        if (this.level) {
+            this.level.stop();
+        };
+        while (this.boardContainer.firstChild) {
+            this.boardContainer.removeChild(this.boardContainer.firstChild);
+        }
+    };
+    this.startNewLevel = function(redBallCount=this.redBallCount, tickLength=this.tickLength) {
+        this.reset();
+        const board = new Board(this.dimensions.x, this.dimensions.y);
+        const entities = [];
+        this.level = new Level(board);
+        entities.push(new Player ({x:Math.floor(this.dimensions.x / 2), y:0}));
+        entities.push(new BlackEnemy ({x:Math.floor(this.dimensions.x / 2), y:this.dimensions.y-1}));
+        for (let i = 0; i < redBallCount; i++) {
+            let xStart = Math.floor(Math.random() * 30) + 3;
+            let yStart = Math.floor(Math.random() * 20) + 3;
+            entities.push(new RedEnemy ({x: xStart, y: yStart}));
+        }
+        for (let i = 0; i < entities.length; i++) {
+            this.level.addBall(entities[i]);
+        }
+        this.level.start(tickLength);
+    };
+    this.setBoardDimensions = function(columns, rows) {
+        this.dimensions.x = columns;
+        this.dimensions.y = rows;
+    };
+}
+
 // Prevent movement keys from having default browser behavior
 window.addEventListener('keydown', function(e){
     switch(e.keyCode){
