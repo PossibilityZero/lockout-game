@@ -198,6 +198,7 @@ function RedEnemy(coords) {
 
 function Level(board) {
     this.board = board;
+    this.lives = 3;
     this.entities = [];
     this.addBall = function(ball) {
         if (ball.ballType == 'player-ball') {
@@ -227,20 +228,36 @@ function Level(board) {
     };
     this.claimStartVelocity = {};
     this.isClaiming = false;
+    this.claimBoundaries = {
+        max: {},
+        min: {}};
     this.startClaim = function() {
         this.isClaiming = true;
         this.claimStartVelocity = {};
         this.claimStartVelocity.x = this.playerBall.velocity.x;
         this.claimStartVelocity.y = this.playerBall.velocity.y;
+        this.claimBoundaries.max.x = this.playerBall.coords.x;
+        this.claimBoundaries.max.y = this.playerBall.coords.y;
+        this.claimBoundaries.min.x = this.playerBall.coords.x;
+        this.claimBoundaries.min.y = this.playerBall.coords.y;
+    };
+    this.expandClaimBoundaries = function() {
+        this.claimBoundaries.max.x = Math.max(this.claimBoundaries.max.x, this.playerBall.coords.x);
+        this.claimBoundaries.max.y = Math.max(this.claimBoundaries.max.y, this.playerBall.coords.y);
+        this.claimBoundaries.min.x = Math.min(this.claimBoundaries.min.x, this.playerBall.coords.x);
+        this.claimBoundaries.min.y = Math.min(this.claimBoundaries.min.y, this.playerBall.coords.y);
     };
     this.activateSurroundedCells = function() {
-        const boardCells = Array.from(this.board.getAllCells());
+        const boardCells = this.board.getAllCells();
         const claimedCells = [];
-        for (let i = 0; i < boardCells.length; i++) {
-            if (false) {
-                claimedCells.push(boardCells[i]);
+        boardCells.forEach(function(cell) {
+            if (this.claimBoundaries.min.x <= cell.dataset.xCoord &&
+                cell.dataset.xCoord <= this.claimBoundaries.max.x &&
+                this.claimBoundaries.min.y <= cell.dataset.yCoord &&
+                cell.dataset.yCoord <= this.claimBoundaries.max.y) {
+                claimedCells.push(cell);
             }
-        }
+        }, this);
         for (let i = 0; i < claimedCells.length; i++) {
             claimedCells[i].classList.replace('unclaimed-cell', 'live-cell')
         }
@@ -259,7 +276,7 @@ function Level(board) {
     };
     this.breakClaim = function() {
         this.isClaiming = false;
-        this.playerBall.reset();
+        this.loseLife();
         const boardCells = this.board.getAllCells();
         for (let i = 0; i < boardCells.length; i++) {
             boardCells[i].classList.replace('live-cell', 'unclaimed-cell');
@@ -268,20 +285,43 @@ function Level(board) {
     this.endClaim = function() {
         this.isClaiming = false;
     };
+    this.loseLife = function() {
+        this.lives -= 1;
+        if (this.lives <= 0) {
+            this.stop();
+        } else {
+            this.playerBall.reset();
+            const blackEnemies = this.entities.filter((ball) => ball.ballType == 'black-ball');
+            blackEnemies.forEach(blackEnemy => blackEnemy.reset());
+        }
+    };
     this.updateBoard = function() {
+        // Check Red Enemy Functions
         const redEnemies = this.entities.filter((ball) => ball.ballType == 'red-ball');
-        for (let i = 0; i < redEnemies.length; i++) {
-            let redEnemyCell = this.board.getCellByCoords(redEnemies[i].coords);
+        redEnemies.forEach(function(redEnemy) {
+            let redEnemyCell = this.board.getCellByCoords(redEnemy.coords);
             if (redEnemyCell.classList.contains('live-cell')) {
                 this.breakClaim();
             }
-        }
+        }, this);
+        // Check Black Enemy Functions
+        const blackEnemies = this.entities.filter((ball) => ball.ballType == 'black-ball');
+        blackEnemies.forEach(function(blackEnemy) {
+            if (Math.abs(blackEnemy.coords.x - this.playerBall.coords.x) <= 1 &&
+                Math.abs(blackEnemy.coords.y - this.playerBall.coords.y) <= 1) {
+                this.loseLife();
+            }
+        }, this);
+        // Check Player Functions
         const playerCell = this.board.getCellByCoords(this.playerBall.coords);
-        playerCell.classList.replace('unclaimed-cell', 'live-cell');
-        if (playerCell.classList.contains('live-cell') && !this.isClaiming) {
+        if (playerCell.classList.contains('unclaimed-cell') && !this.isClaiming) {
             this.startClaim();
         } else if (playerCell.classList.contains('claimed-cell') && this.isClaiming) {
             this.completeClaim();
+        }
+        if (this.isClaiming) {
+            playerCell.classList.replace('unclaimed-cell', 'live-cell');
+            this.expandClaimBoundaries();
         }
     };
     this.renderBoard = function() {
