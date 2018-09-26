@@ -199,6 +199,7 @@ function RedEnemy(coords) {
 function Level(board) {
     this.board = board;
     this.lives = 3;
+    this.winRatio = 0.65;
     this.entities = [];
     this.addBall = function(ball) {
         if (ball.ballType == 'player-ball') {
@@ -263,7 +264,6 @@ function Level(board) {
         }
     };
     this.completeClaim = function() {
-        this.isClaiming = false;
         const boardCells = this.board.getAllCells();
         // call paint function if returning to claimed cells in different direction
         if (this.claimStartVelocity.x != this.playerBall.velocity.x ||
@@ -273,6 +273,7 @@ function Level(board) {
         for (let i = 0; i < boardCells.length; i++) {
             boardCells[i].classList.replace('live-cell', 'claimed-cell');
         }
+        this.endClaim();
     };
     this.breakClaim = function() {
         this.isClaiming = false;
@@ -284,6 +285,14 @@ function Level(board) {
     };
     this.endClaim = function() {
         this.isClaiming = false;
+        let claimedCount = this.board.getAllCells()
+            .filter(cell => cell.classList.contains('claimed-cell'))
+            .length;
+        let cellCount = this.board.getAllCells().length;
+        let claimedRatio = claimedCount / cellCount;
+        if (claimedRatio >= this.winRatio) {
+            this.stop();
+        }
     };
     this.loseLife = function() {
         this.lives -= 1;
@@ -398,3 +407,6 @@ window.addEventListener('keydown', function(e){
             e.preventDefault();
     }
 });
+
+const game = new Game();
+game.startNewLevel();
