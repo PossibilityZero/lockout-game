@@ -1,5 +1,7 @@
+const FRAMERATE = 15;
 function Board(columns, rows) {
     this.boardContainer = document.querySelector('.game-board');
+    this.cells = [];
     this.toCoordsString = function(coords) {
         return `x${coords.x}y${coords.y}`
     };
@@ -20,6 +22,7 @@ function Board(columns, rows) {
                 newCell.dataset.xCoord = (j);
                 newCell.dataset.yCoord = (i);
                 this.boardContainer.appendChild(newCell);
+                this.cells.push(newCell);
             }
         }
     };
@@ -172,7 +175,6 @@ function Player(coords) {
     this.handleInput = function(e) {
         this.input(e.keyCode);
     };
-    document.addEventListener('keydown', (e) => this.handleInput(e));
 }
 function BlackEnemy(coords) {
     Ball.call(this, coords, 'black-ball');
@@ -204,6 +206,7 @@ function Level(board) {
     this.addBall = function(ball) {
         if (ball.ballType == 'player-ball') {
             this.playerBall = ball;
+            document.addEventListener('keydown', (e) => ball.handleInput(e));
         }
         this.entities.push(ball);
     };
@@ -334,10 +337,7 @@ function Level(board) {
         }
     };
     this.renderBoard = function() {
-        this.board.removeAllEntities();
-        for (i in this.entities) {
-            this.board.drawBall(this.entities[i].coords, this.entities[i].ballType);
-        }
+        graphicsHandler.renderFrame(this.board.cells, this.entities); 
     };
     this.update = function() {
         this.updateEntities();
@@ -367,7 +367,7 @@ function Game(){
     this.boardContainer = document.querySelector('.game-board');
     this.dimensions = {x: 40, y: 25};
     this.redBallCount = 2;
-    this.tickLength = 80;
+    this.tickLength = Math.floor(1000 / FRAMERATE);
     this.reset = function() {
         if (this.level) {
             this.level.stop();
