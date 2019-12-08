@@ -32,15 +32,10 @@ function Board(columns, rows) {
     this.getAllCells = function() {
         return Array.from(this.boardContainer.querySelectorAll('.board-cell'));
     };
-    this.setBoardStyle = function(columns, rows, cellSize) {
-        this.boardContainer.style.gridTemplateColumns = `repeat(${columns}, 1fr)`
-        this.boardContainer.style.gridTemplateRows = `repeat(${rows}, 1fr)`
-        this.boardContainer.style.width = cellSize * columns + 'px';
-        this.boardContainer.style.height = cellSize * rows + 'px';
-    };
     this.drawBoard = function(columns, rows, cellSize=20) {
         this.generateCells(columns, rows);
-        this.setBoardStyle(columns, rows, cellSize);
+        graphicsHandler.setCellSize(cellSize);
+        graphicsHandler.setupBoard(columns, rows);
     };
     this.removeAllEntities = function() {
         const currentEntities = this.boardContainer.querySelectorAll('.ball');

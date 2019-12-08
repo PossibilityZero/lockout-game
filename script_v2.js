@@ -2,11 +2,16 @@ const graphicsHandler = (function() {
     const canvas = document.querySelector("canvas#game");
     canvas.width = 800;
     canvas.height = 500;
+    let cellSize = 20;
     const ctx = canvas.getContext("2d");
+    const setCellSize = (newCellSize) => {
+        cellSize = newCellSize;
+    }
+    const setupBoard = (columns, rows) => {
+        canvas.width = columns * cellSize - 1;
+        canvas.height = rows * cellSize - 1;
+    }
     const drawBoard = (cells) => {
-        // 40 x 25
-        let width = 40;
-        let height = 25;
         cells.forEach(cell => {
             let x = cell.dataset.xCoord;
             let y = cell.dataset.yCoord;
@@ -17,15 +22,22 @@ const graphicsHandler = (function() {
             } else {
                 ctx.fillStyle = "#111";
             }
-            ctx.fillRect(x * 20, y * 20, 19, 19);
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
         });
     };
     const drawBall = (ball) => {
         let x = ball.coords.x;
         let y = ball.coords.y;
-        let centerX = x * 20 + 10;
-        let centerY = y * 20 + 10;
-        let gradient = ctx.createRadialGradient(centerX -3 , centerY -3, 1, centerX, centerY, 13);
+        let centerX = x * cellSize + Math.floor(cellSize * 0.5);
+        let centerY = y * cellSize + Math.floor(cellSize * 0.5);
+        let ballRadius = Math.floor(cellSize * 0.4);
+        let gradient = ctx.createRadialGradient(
+            centerX - ballRadius * 0.3,
+            centerY - ballRadius * 0.3,
+            ballRadius * 0.2,
+            centerX,
+            centerY,
+            ballRadius * 1.6);
         let gradientColors;
         switch (ball.ballType) {
             case "player-ball":
@@ -45,7 +57,7 @@ const graphicsHandler = (function() {
         gradient.addColorStop(1, gradientColors[2]);
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, ballRadius, 0, Math.PI * 2);
         ctx.fill();
     };
     const renderFrame = (cells, entities) => {
@@ -55,30 +67,6 @@ const graphicsHandler = (function() {
         console.log("Rendering frame");
     };
     return {
-        renderFrame
+        renderFrame, setupBoard, setCellSize
     };
 })();
-
-const createGame = function(graphicsHandler) {
-    const boardContainer = document.querySelector('.game-board');
-    const dimensions = {x: 40, y: 25};
-    const redBallCount = 2;
-    const tickLength = 80;
-    startNewLevel = () => {
-    };
-    return {
-        startNewLevel
-    };
-};
-
-// Prevent movement keys from having default browser behavior
-window.addEventListener('keydown', function(e){
-    switch(e.keyCode){
-        case 37: case 39: case 38:  case 40: // Arrow keys
-        case 87: case 65: case 83:  case 68: // WASD keys
-            e.preventDefault();
-    }
-});
-
-const game_v2 = createGame(graphicsHandler);
-game_v2.startNewLevel();
