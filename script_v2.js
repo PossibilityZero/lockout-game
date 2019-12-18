@@ -1,9 +1,7 @@
 const graphicsHandler = (function() {
     const canvas = document.querySelector("canvas#game");
-    canvas.width = 800;
-    canvas.height = 500;
-    let cellSize = 20;
     const ctx = canvas.getContext("2d");
+    let cellSize = 20;
     const setCellSize = (newCellSize) => {
         cellSize = newCellSize;
     }
@@ -13,11 +11,10 @@ const graphicsHandler = (function() {
     }
     const drawBoard = (cells) => {
         cells.forEach(cell => {
-            let x = cell.dataset.xCoord;
-            let y = cell.dataset.yCoord;
-            if (cell.classList.contains("unclaimed-cell")) {
+            const {x, y} = cell.getCoords();
+            if (cell.isType("unclaimed-cell")) {
                 ctx.fillStyle = "#ddd";
-            } else if (cell.classList.contains("live-cell")) {
+            } else if (cell.isType("live-cell")) {
                 ctx.fillStyle = "#00f";
             } else {
                 ctx.fillStyle = "#111";

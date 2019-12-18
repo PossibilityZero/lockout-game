@@ -1,36 +1,48 @@
 const FRAMERATE = 15;
 function Board(columns, rows) {
-    this.boardContainer = document.querySelector('.game-board');
     this.cells = [];
+    this.columns = columns;
+    this.rows = rows;
     this.toCoordsString = function(coords) {
         return `x${coords.x}y${coords.y}`
     };
     this.generateCells = function(columns, rows) {
         // generate a perimeter of dummy cells, to simulate an impassible boundary
-        for (let i = -1; i <= rows; i++) {
-            for (let j = -1; j <= columns; j++) {
-                let newCell = document.createElement('div');
-                newCell.classList.add('board-cell');
-                newCell.setAttribute('id', `x${j}y${i}`)
-                if (j < 0 || j >= columns || i < 0 || i >= rows) {
-                    newCell.classList.add('dummy-cell');
-                } else if (j <=1 || j >= columns - 2 || i <= 1 || i >= rows - 2) {
-                    newCell.classList.add('claimed-cell');
+        for (let x = 0; x < columns; x++) {
+            let newRow = [];
+            for (let y = 0; y < rows; y++) {
+                let newCell;
+                if (y <=1 || y >= rows - 2 || x <= 1 || x >= columns - 2) {
+                    newCell = makeCell('claimed-cell', x, y);
                 } else {
-                    newCell.classList.add('unclaimed-cell');
+                    newCell = makeCell('unclaimed-cell', x, y);
                 }
-                newCell.dataset.xCoord = (j);
-                newCell.dataset.yCoord = (i);
-                this.boardContainer.appendChild(newCell);
-                this.cells.push(newCell);
+                newRow.push(newCell);
             }
+            this.cells.push(newRow);
         }
     };
     this.getCellByCoords = function(coords) {
-        return this.boardContainer.querySelector('#'+this.toCoordsString(coords));
+        return this.cells[coords.x][coords.y];
     };
+    this.isOutOfRange = function(coords) {
+        return (
+            coords.x < 0 ||
+            coords.y < 0 ||
+            coords.x > this.columns - 1 ||
+            coords.y > this.rows - 1
+        );
+    };
+    this.coordCanBeEntered = function(coords, allowedCellTypes) {
+        if (this.isOutOfRange(coords)) {
+            return false;
+        } else {
+            const targetCell = this.getCellByCoords(coords);
+            return allowedCellTypes.some(cellType => targetCell.isType(cellType));
+        }
+    }
     this.getAllCells = function() {
-        return Array.from(this.boardContainer.querySelectorAll('.board-cell'));
+        return this.cells.flat();
     };
     this.drawBoard = function(columns, rows, cellSize=20) {
         this.generateCells(columns, rows);
@@ -43,17 +55,19 @@ function Board(columns, rows) {
             currentEntities[i].parentNode.removeChild(currentEntities[i]);
         }
     };
-    this.drawBall = function(coords, ballType) {
-        const cell = this.getCellByCoords(coords);
-        if (!cell.firstChild) {
-            // only display one ball per cell
-            const ball = document.createElement('div');
-            ball.classList.add('ball');
-            ball.classList.add(ballType);
-            cell.appendChild(ball);
-        }
-    }
     this.drawBoard(columns, rows);
+}
+
+function makeCell(type, x, y) {
+    let cellType = type;
+    const setType = (newType) => {
+        cellType = newType;
+    }
+    const getType = () => cellType;
+    const isType = (type) => cellType == type;
+    const getCoords = () => ({x, y});
+    const cell = {isType, setType, getType, getCoords};
+    return cell;
 }
 
 function Ball(coords, ballType) {
@@ -72,23 +86,37 @@ function Ball(coords, ballType) {
     };
     this.resetVelocity = () => this.velocity = {x:0, y:0};
     this.canEnterCell = function(cell) {
-        return this.allowedCells.some(cellType => cell.classList.contains(cellType))
+        return this.allowedCells.some(cellType => cell.isType(cellType))
     };
-    this.getTargetCoords = function() {
-        let nextX = this.coords.x + this.velocity.x;
-        let nextY = this.coords.y + this.velocity.y;
-        return {x: nextX, y: nextY}
-    };
-    this.getBounceTargetCoords = function() {
-        const xTarget = {
+    this.getTargetCoords = function(board) {
+        const target = {
             x: this.coords.x + this.velocity.x,
-            y: this.coords.y - this.velocity.y
-        };
-        const yTarget = {
-            x: this.coords.x - this.velocity.x,
             y: this.coords.y + this.velocity.y
         };
-        return {xTarget, yTarget};
+        if (board.coordCanBeEntered(target, this.allowedCells)) {
+            return target;
+        } else {
+            return this.getBounceTargetCoords(board);
+        }
+    };
+    this.getBounceTargetCoords = function(board) {
+        const {xAdjacent, yAdjacent} = this.getAdjacentCellCoords();
+        const xCanEnter = board.coordCanBeEntered(xAdjacent, this.allowedCells);
+        const yCanEnter = board.coordCanBeEntered(yAdjacent, this.allowedCells);
+        // If it's a corner, bounce back. Otherwise, change velocity of blocked side
+        let xChange, yChange;
+        if (xCanEnter === yCanEnter) {
+            xChange = -1;
+            yChange = -1;
+        } else {
+            xChange = xCanEnter ? 1 : -1;
+            yChange = yCanEnter ? 1 : -1;
+        }
+
+        return {
+            x: this.coords.x + this.velocity.x * xChange,
+            y: this.coords.y + this.velocity.y * yChange
+        };
     };
     this.getAdjacentCellCoords = function() {
         const xAdjacent = {
@@ -101,35 +129,12 @@ function Ball(coords, ballType) {
         };
         return {xAdjacent, yAdjacent};
     }
-    this.setBounceVelocity = function(relevantCells) {
-        const canMaintainX = this.canEnterCell(relevantCells.bounceTargetX);
-        const canMaintainY = this.canEnterCell(relevantCells.bounceTargetY);
-        const preferBounceX = !this.canEnterCell(relevantCells.adjacentX);
-        const preferBounceY = !this.canEnterCell(relevantCells.adjacentY);
-        if (!canMaintainX && ! canMaintainY) {
-            this.velocity.x *= -1;
-            this.velocity.y *= -1;
-        } else if (canMaintainX && canMaintainY) {
-            if (preferBounceX > preferBounceY) {
-                this.velocity.x *= -1;
-            } else if (preferBounceX < preferBounceY) {
-                this.velocity.y *= -1;
-            } else {
-                this.velocity.x *= -1;
-                this.velocity.y *= -1;
-            }
-        } else if (canMaintainX) {
-            this.velocity.y *= -1;
-        } else if (canMaintainY) {
-            this.velocity.x *= -1;
-        } 
-    };
     this.setCoords = function(newCoords) {
         this.coords.x = newCoords.x;
         this.coords.y = newCoords.y;
     };
-    this.updateCoords = function(forcedNextCoords) {
-        let nextCoords = forcedNextCoords || this.getTargetCoords();
+    this.updateCoords = function(board) {
+        let nextCoords = this.getTargetCoords(board);
         this.velocity.x = nextCoords.x - this.coords.x;
         this.velocity.y = nextCoords.y - this.coords.y;
         this.setCoords(nextCoords);
@@ -142,10 +147,9 @@ function Player(coords) {
         LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40,
         W: 87, A: 65, S: 83, D: 68
     };
-    this.setBounceVelocity = function() {
+    this.getBounceTargetCoords = function() {
         // Player ball never bounces
-        this.velocity.x = 0;
-        this.velocity.y = 0;
+        return this.coords;
     };
     this.input = function(keyCode) {
         switch (keyCode) {
@@ -206,24 +210,10 @@ function Level(board) {
         this.entities.push(ball);
     };
     this.updateEntities = function() {
-        for (i in this.entities) {
-            const ball = this.entities[i];
-            const targetCell = this.board.getCellByCoords(ball.getTargetCoords());
-            if (ball.canEnterCell(targetCell)) {
-                ball.updateCoords();
-            } else {
-                const bounceTargetCoords = ball.getBounceTargetCoords();
-                const adjacentCellCoords = ball.getAdjacentCellCoords();
-                const relevantCells = {
-                    bounceTargetX: this.board.getCellByCoords(bounceTargetCoords.xTarget),
-                    bounceTargetY: this.board.getCellByCoords(bounceTargetCoords.yTarget),
-                    adjacentX: this.board.getCellByCoords(adjacentCellCoords.xAdjacent),
-                    adjacentY: this.board.getCellByCoords(adjacentCellCoords.yAdjacent)
-                }
-                ball.setBounceVelocity(relevantCells);
-                ball.updateCoords();
-            }
-        }
+        this.entities.forEach(ball => {
+            const targetCoords = ball.getTargetCoords(this.board); // unneccesary
+            ball.updateCoords(this.board);
+        });
     };
     this.claimStartVelocity = {};
     this.isClaiming = false;
@@ -250,16 +240,17 @@ function Level(board) {
         const boardCells = this.board.getAllCells();
         const claimedCells = [];
         boardCells.forEach(function(cell) {
-            if (this.claimBoundaries.min.x <= cell.dataset.xCoord &&
-                cell.dataset.xCoord <= this.claimBoundaries.max.x &&
-                this.claimBoundaries.min.y <= cell.dataset.yCoord &&
-                cell.dataset.yCoord <= this.claimBoundaries.max.y) {
+            const {x, y} = cell.getCoords();
+            if (this.claimBoundaries.min.x <= x &&
+                x <= this.claimBoundaries.max.x &&
+                this.claimBoundaries.min.y <= y &&
+                y <= this.claimBoundaries.max.y) {
                 claimedCells.push(cell);
             }
         }, this);
-        for (let i = 0; i < claimedCells.length; i++) {
-            claimedCells[i].classList.replace('unclaimed-cell', 'live-cell')
-        }
+        claimedCells.forEach(cell => {
+            cell.setType('live-cell');
+        });
     };
     this.completeClaim = function() {
         const boardCells = this.board.getAllCells();
@@ -269,7 +260,9 @@ function Level(board) {
             this.activateSurroundedCells();
         }
         for (let i = 0; i < boardCells.length; i++) {
-            boardCells[i].classList.replace('live-cell', 'claimed-cell');
+            if (boardCells[i].isType("live-cell")) {
+                boardCells[i].setType('claimed-cell');
+            }
         }
         this.endClaim();
     };
@@ -277,14 +270,16 @@ function Level(board) {
         this.isClaiming = false;
         this.loseLife();
         const boardCells = this.board.getAllCells();
-        for (let i = 0; i < boardCells.length; i++) {
-            boardCells[i].classList.replace('live-cell', 'unclaimed-cell');
-        }
+        boardCells.forEach(cell => {
+            if (cell.isType('live-cell')) {
+                cell.setType('unclaimed-cell');
+            }
+        });
     };
     this.endClaim = function() {
         this.isClaiming = false;
         let claimedCount = this.board.getAllCells()
-            .filter(cell => cell.classList.contains('claimed-cell'))
+            .filter(cell => cell.isType('claimed-cell'))
             .length;
         let cellCount = this.board.getAllCells().length;
         let claimedRatio = claimedCount / cellCount;
@@ -307,7 +302,7 @@ function Level(board) {
         const redEnemies = this.entities.filter((ball) => ball.ballType == 'red-ball');
         redEnemies.forEach(function(redEnemy) {
             let redEnemyCell = this.board.getCellByCoords(redEnemy.coords);
-            if (redEnemyCell.classList.contains('live-cell')) {
+            if (redEnemyCell.isType('live-cell')) {
                 this.breakClaim();
             }
         }, this);
@@ -321,18 +316,18 @@ function Level(board) {
         }, this);
         // Check Player Functions
         const playerCell = this.board.getCellByCoords(this.playerBall.coords);
-        if (playerCell.classList.contains('unclaimed-cell') && !this.isClaiming) {
+        if (playerCell.isType('unclaimed-cell') && !this.isClaiming) {
             this.startClaim();
-        } else if (playerCell.classList.contains('claimed-cell') && this.isClaiming) {
+        } else if (playerCell.isType('claimed-cell') && this.isClaiming) {
             this.completeClaim();
         }
         if (this.isClaiming) {
-            playerCell.classList.replace('unclaimed-cell', 'live-cell');
+            playerCell.setType('live-cell');
             this.expandClaimBoundaries();
         }
     };
     this.renderBoard = function() {
-        graphicsHandler.renderFrame(this.board.cells, this.entities); 
+        graphicsHandler.renderFrame(this.board.getAllCells(), this.entities); 
     };
     this.update = function() {
         this.updateEntities();
@@ -350,7 +345,7 @@ function Level(board) {
         if (!this.playing) {
             this.playing = true;
             this.setSpeed(tickLength);
-            this.play(this.tickLength);
+            this.play();
         }
     };
     this.stop = function() {
@@ -363,16 +358,7 @@ function Game(){
     this.dimensions = {x: 40, y: 25};
     this.redBallCount = 2;
     this.tickLength = Math.floor(1000 / FRAMERATE);
-    this.reset = function() {
-        if (this.level) {
-            this.level.stop();
-        };
-        while (this.boardContainer.firstChild) {
-            this.boardContainer.removeChild(this.boardContainer.firstChild);
-        }
-    };
     this.startNewLevel = function(redBallCount=this.redBallCount, tickLength=this.tickLength) {
-        this.reset();
         const board = new Board(this.dimensions.x, this.dimensions.y);
         const entities = [];
         this.level = new Level(board);
