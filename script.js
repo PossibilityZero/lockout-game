@@ -1,8 +1,8 @@
 const FRAMERATE = 15;
 
 const graphicsHandler = (function() {
-    const canvas = document.querySelector("canvas#game");
-    const ctx = canvas.getContext("2d");
+    const canvas = document.querySelector('canvas#game');
+    const ctx = canvas.getContext('2d');
     let cellSize = 20;
     const setCellSize = (newCellSize) => {
         cellSize = newCellSize;
@@ -14,12 +14,12 @@ const graphicsHandler = (function() {
     const drawBoard = (cells) => {
         cells.forEach(cell => {
             const {x, y} = cell.getCoords();
-            if (cell.isType("unclaimed-cell")) {
-                ctx.fillStyle = "#ddd";
-            } else if (cell.isType("live-cell")) {
-                ctx.fillStyle = "#00f";
+            if (cell.isType('unclaimed-cell')) {
+                ctx.fillStyle = '#ddd';
+            } else if (cell.isType('live-cell')) {
+                ctx.fillStyle = '#00f';
             } else {
-                ctx.fillStyle = "#111";
+                ctx.fillStyle = '#111';
             }
             ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
         });
@@ -39,17 +39,17 @@ const graphicsHandler = (function() {
             ballRadius * 1.6);
         let gradientColors;
         switch (ball.ballType) {
-            case "player-ball":
-                gradientColors = ["#fff", "#888", "#000"];
+            case 'player-ball':
+                gradientColors = ['#fff', '#888', '#000'];
                 break;
-            case "red-ball":
-                gradientColors = ["#fee", "#d00", "#000"];
+            case 'red-ball':
+                gradientColors = ['#fee', '#d00', '#000'];
                 break;
-            case "black-ball":
-                gradientColors = ["#fff", "#222", "#000"];
+            case 'black-ball':
+                gradientColors = ['#fff', '#222', '#000'];
                 break;
             default:
-                gradientColors = ["#fff", "#fff", "#000"];
+                gradientColors = ['#fff', '#fff', '#000'];
         }
         gradient.addColorStop(0, gradientColors[0]);
         gradient.addColorStop(.5, gradientColors[1]);
@@ -63,7 +63,7 @@ const graphicsHandler = (function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawBoard(cells);
         entities.forEach(entity => drawBall(entity));
-        console.log("Rendering frame");
+        console.log('Rendering frame');
     };
     return {
         renderFrame, setupBoard, setCellSize
@@ -330,11 +330,11 @@ function Level(board) {
             this.claimStartVelocity.y != this.playerBall.velocity.y) {
             this.activateSurroundedCells();
         }
-        for (let i = 0; i < boardCells.length; i++) {
-            if (boardCells[i].isType("live-cell")) {
-                boardCells[i].setType('claimed-cell');
+        boardCells.forEach(cell => {
+            if (cell.isType('live-cell')) {
+                cell.setType('claimed-cell');
             }
-        }
+        });
         this.endClaim();
     };
     this.breakClaim = function() {
