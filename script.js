@@ -70,6 +70,19 @@ const graphicsHandler = (function() {
   };
 })();
 
+const infoPanelHandler = (function() {
+  const infoPanel = document.querySelector('.info-panel');
+  const livesReadout = document.getElementById('lives-readout');
+  const targetReadout = document.getElementById('target-readout');
+  const updateStats = (lives, claimedRatio, winRatio) => {
+    livesReadout.textContent = `Remaining Lives: ${lives}`;
+    targetReadout.textContent = `Claimed Percentage: ${Math.floor(claimedRatio * 100)}%`;
+  };
+  return {
+    updateStats
+  };
+})();
+
 function Board(columns, rows) {
   this.cells = [];
   this.columns = columns;
@@ -211,6 +224,7 @@ function Ball(coords, ballType) {
     this.setCoords(nextCoords);
   };
 }
+
 function Player(coords) {
   Ball.call(this, coords, 'player-ball');
   this.allowedCells = ['claimed-cell', 'unclaimed-cell', 'live-cell'];
@@ -246,6 +260,7 @@ function Player(coords) {
     this.input(e.keyCode);
   };
 }
+
 function BlackEnemy(coords) {
   Ball.call(this, coords, 'black-ball');
   this.allowedCells = ['claimed-cell'];
@@ -255,6 +270,7 @@ function BlackEnemy(coords) {
     y: 1,
   };
 }
+
 function RedEnemy(coords) {
   Ball.call(this, coords, 'red-ball');
   this.allowedCells = ['unclaimed-cell', 'live-cell'];
@@ -272,6 +288,7 @@ function Level(board) {
   this.board = board;
   this.lives = 3;
   this.winRatio = 0.65;
+  this.claimedRatio = 0;
   this.entities = [];
   this.addBall = function(ball) {
     if (ball.ballType == 'player-ball') {
@@ -347,14 +364,17 @@ function Level(board) {
       }
     });
   };
-  this.endClaim = function() {
-    this.isClaiming = false;
+  this.calculateClaimRatio = function() {
     let claimedCount = this.board.getAllCells()
       .filter(cell => cell.isType('claimed-cell'))
       .length;
     let cellCount = this.board.getAllCells().length;
-    let claimedRatio = claimedCount / cellCount;
-    if (claimedRatio >= this.winRatio) {
+    this.claimedRatio = claimedCount / cellCount;
+  };
+  this.endClaim = function() {
+    this.isClaiming = false;
+    this.calculateClaimRatio();
+    if (this.claimedRatio >= this.winRatio) {
       this.stop();
     }
   };
@@ -400,10 +420,14 @@ function Level(board) {
   this.renderBoard = function() {
     graphicsHandler.renderFrame(this.board.getAllCells(), this.entities); 
   };
+  this.updateInfoPanel = function() {
+    infoPanelHandler.updateStats(this.lives, this.claimedRatio);
+  };
   this.update = function() {
     this.updateEntities();
     this.updateBoard();
     this.renderBoard();
+    this.updateInfoPanel();
   };
   this.play = function() {
     this.update();
@@ -413,6 +437,7 @@ function Level(board) {
     this.tickLength = tickLength;
   };
   this.start = function(tickLength) {
+    this.calculateClaimRatio();
     if (!this.playing) {
       this.playing = true;
       this.setSpeed(tickLength);
@@ -436,8 +461,8 @@ function Game(){
     entities.push(new Player ({x:Math.floor(this.dimensions.x / 2), y:0}));
     entities.push(new BlackEnemy ({x:Math.floor(this.dimensions.x / 2), y:this.dimensions.y-1}));
     for (let i = 0; i < redBallCount; i++) {
-      let xStart = Math.floor(Math.random() * 30) + 3;
-      let yStart = Math.floor(Math.random() * 20) + 3;
+      let xStart = Math.floor(Math.random() * (this.dimensions.x - 4)) + 3;
+      let yStart = Math.floor(Math.random() * (this.dimensions.y - 4)) + 3;
       entities.push(new RedEnemy ({x: xStart, y: yStart}));
     }
     for (let i = 0; i < entities.length; i++) {
