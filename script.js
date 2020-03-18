@@ -73,10 +73,12 @@ const graphicsHandler = (function() {
 const infoPanelHandler = (function() {
   const infoPanel = document.querySelector('.info-panel');
   const livesReadout = document.getElementById('lives-readout');
-  const targetReadout = document.getElementById('target-readout');
+  const claimedReadout = document.getElementById('claimed-percentage-readout');
+  const targetReadout = document.getElementById('target-percentage-readout');
   const updateStats = (lives, claimedRatio, winRatio) => {
     livesReadout.textContent = `Remaining Lives: ${lives}`;
-    targetReadout.textContent = `Claimed Percentage: ${Math.floor(claimedRatio * 100)}%`;
+    claimedReadout.textContent = `Claimed Percentage: ${Math.floor(claimedRatio * 100)}%`;
+    targetReadout.textContent = `Target Percentage: ${Math.floor(winRatio * 100)}%`;
   };
   return {
     updateStats
@@ -421,7 +423,7 @@ function Level(board) {
     graphicsHandler.renderFrame(this.board.getAllCells(), this.entities); 
   };
   this.updateInfoPanel = function() {
-    infoPanelHandler.updateStats(this.lives, this.claimedRatio);
+    infoPanelHandler.updateStats(this.lives, this.claimedRatio, this.winRatio);
   };
   this.update = function() {
     this.updateEntities();
