@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.3] - 2020-03-19
+### Added
+- Added bounce "eroding" mechanism
+- Added game info readout panel
+
+### Changed
+- Improved code style
+
 ## [0.2] - 2019-12-19
 ### Added
 - Scalable graphics
