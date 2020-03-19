@@ -111,7 +111,7 @@ function Board(columns, rows) {
   this.getCellByCoords = function(coords) {
     return this.cells[coords.x][coords.y];
   };
-  this.isOutOfRange = function(coords) {
+  this.isOutsideOfBoard = function(coords) {
     return (
       coords.x < 0 ||
       coords.y < 0 ||
@@ -120,7 +120,7 @@ function Board(columns, rows) {
     );
   };
   this.coordCanBeEntered = function(coords, allowedCellTypes) {
-    if (this.isOutOfRange(coords)) {
+    if (this.isOutsideOfBoard(coords)) {
       return false;
     } else {
       const targetCell = this.getCellByCoords(coords);
@@ -419,6 +419,16 @@ function Level(board) {
       this.expandClaimBoundaries();
     }
   };
+  this.flipUnallowedCells = function() {
+    // if a ball ends up in a cell it shouldn't occupy, flip it back
+    this.entities.forEach(ball => {
+      if (!board.coordCanBeEntered(ball.coords, ball.allowedCells)) {
+        let cell = board.getCellByCoords(ball.coords);
+        cell.setType(ball.allowedCells[0]);
+        console.log("problem!");
+      }
+    });
+  };
   this.renderBoard = function() {
     graphicsHandler.renderFrame(this.board.getAllCells(), this.entities); 
   };
@@ -428,6 +438,7 @@ function Level(board) {
   this.update = function() {
     this.updateEntities();
     this.updateBoard();
+    this.flipUnallowedCells();
     this.renderBoard();
     this.updateInfoPanel();
   };
